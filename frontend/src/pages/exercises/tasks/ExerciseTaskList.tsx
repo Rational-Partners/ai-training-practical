@@ -10,6 +10,8 @@ import {
   Card,
   Spinner,
   Alert,
+  Modal,
+  Form,
 } from "react-bootstrap";
 import { Plus } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -57,9 +59,10 @@ const statusMap: Record<TaskStatus, string> = {
 
 interface TaskTableProps {
   tasks: ExampleTask[];
+  onStatusChange: (taskId: string, newStatus: TaskStatus) => void;
 }
 
-const TaskTable = ({ tasks }: TaskTableProps) => {
+const TaskTable = ({ tasks, onStatusChange }: TaskTableProps) => {
   return (
     <Table responsive>
       <thead>
@@ -70,6 +73,7 @@ const TaskTable = ({ tasks }: TaskTableProps) => {
           <th className="align-middle d-none d-xl-table-cell">Description</th>
           <th className="align-middle d-none d-xxl-table-cell">Created</th>
           <th className="align-middle">Priority</th>
+          <th className="align-middle">Status</th>
           <th className="align-middle text-end">Actions</th>
         </tr>
       </thead>
@@ -88,6 +92,17 @@ const TaskTable = ({ tasks }: TaskTableProps) => {
                 {task.priority}
               </Badge>
             </td>
+            <td>
+              <Form.Select
+                size="sm"
+                value={task.status}
+                onChange={(e) => onStatusChange(task.id, e.target.value as TaskStatus)}
+              >
+                <option value={TaskStatus.UPCOMING}>Upcoming</option>
+                <option value={TaskStatus.IN_PROGRESS}>In Progress</option>
+                <option value={TaskStatus.COMPLETED}>Completed</option>
+              </Form.Select>
+            </td>
             <td className="text-end">
               {" "}
               <Button variant="light" size="sm">View</Button>{" "}
@@ -96,7 +111,7 @@ const TaskTable = ({ tasks }: TaskTableProps) => {
         ))}
         {tasks.length === 0 && (
             <tr>
-                <td colSpan={6} className="text-center p-3">No tasks in this category.</td>
+                <td colSpan={7} className="text-center p-3">No tasks in this category.</td>
             </tr>
         )}
       </tbody>
@@ -107,9 +122,11 @@ const TaskTable = ({ tasks }: TaskTableProps) => {
 interface TaskBoardProps {
   title: string;
   tasks: ExampleTask[];
+  onStatusChange: (taskId: string, newStatus: TaskStatus) => void;
+  onNewTask: () => void;
 }
 
-const TaskBoard = ({ title, tasks }: TaskBoardProps) => {
+const TaskBoard = ({ title, tasks, onStatusChange, onNewTask }: TaskBoardProps) => {
   return (
     <Card className="mb-3">
       <Card.Body>
@@ -122,13 +139,14 @@ const TaskBoard = ({ title, tasks }: TaskBoardProps) => {
               <Button
                 variant="primary"
                 size="sm"
+                onClick={onNewTask}
               >
                 <Plus size={18} /> New Task
               </Button>
             </div>
           </Col>
         </Row>
-        <TaskTable tasks={tasks} />
+        <TaskTable tasks={tasks} onStatusChange={onStatusChange} />
       </Card.Body>
     </Card>
   );
@@ -139,6 +157,16 @@ const ExerciseTaskList = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [showIntroAlert, setShowIntroAlert] = useState<boolean>(true);
+
+  // New Task Modal state
+  const [showModal, setShowModal] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    priority: TaskPriority.MEDIUM,
+    status: TaskStatus.UPCOMING,
+  });
 
   useEffect(() => {
     const loadTasks = async () => {
@@ -157,6 +185,72 @@ const ExerciseTaskList = () => {
 
     loadTasks();
   }, []);
+
+  // Modal handlers
+  const handleOpenModal = () => {
+    setShowModal(true);
+    setFormData({
+      name: '',
+      description: '',
+      priority: TaskPriority.MEDIUM,
+      status: TaskStatus.UPCOMING,
+    });
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setFormData({
+      name: '',
+      description: '',
+      priority: TaskPriority.MEDIUM,
+      status: TaskStatus.UPCOMING,
+    });
+  };
+
+  const handleFormChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Create new task
+  const handleCreateTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name.trim()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const newTask = await fetchApi<ExampleTask>('/exercises/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      setTasks(prev => [...prev, newTask]);
+      handleCloseModal();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create task');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Update task status
+  const handleStatusChange = async (taskId: string, newStatus: TaskStatus) => {
+    try {
+      const updatedTask = await fetchApi<ExampleTask>(`/exercises/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      setTasks(prev => prev.map(task =>
+        task.id === taskId ? updatedTask : task
+      ));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update task status');
+    }
+  };
 
   const upcomingTasks = tasks.filter((task) => task.status === TaskStatus.UPCOMING);
   const inProgressTasks = tasks.filter((task) => task.status === TaskStatus.IN_PROGRESS);
@@ -218,11 +312,91 @@ const ExerciseTaskList = () => {
 
         {!isLoading && !error && (
           <>
-            <TaskBoard title={statusMap[TaskStatus.UPCOMING]} tasks={upcomingTasks} />
-            <TaskBoard title={statusMap[TaskStatus.IN_PROGRESS]} tasks={inProgressTasks} />
-            <TaskBoard title={statusMap[TaskStatus.COMPLETED]} tasks={completedTasks} />
+            <TaskBoard
+              title={statusMap[TaskStatus.UPCOMING]}
+              tasks={upcomingTasks}
+              onStatusChange={handleStatusChange}
+              onNewTask={handleOpenModal}
+            />
+            <TaskBoard
+              title={statusMap[TaskStatus.IN_PROGRESS]}
+              tasks={inProgressTasks}
+              onStatusChange={handleStatusChange}
+              onNewTask={handleOpenModal}
+            />
+            <TaskBoard
+              title={statusMap[TaskStatus.COMPLETED]}
+              tasks={completedTasks}
+              onStatusChange={handleStatusChange}
+              onNewTask={handleOpenModal}
+            />
           </>
         )}
+
+        {/* New Task Modal */}
+        <Modal show={showModal} onHide={handleCloseModal}>
+          <Modal.Header closeButton>
+            <Modal.Title>Create New Task</Modal.Title>
+          </Modal.Header>
+          <Form onSubmit={handleCreateTask}>
+            <Modal.Body>
+              <Form.Group className="mb-3">
+                <Form.Label>Task Name <span className="text-danger">*</span></Form.Label>
+                <Form.Control
+                  type="text"
+                  placeholder="Enter task name"
+                  value={formData.name}
+                  onChange={(e) => handleFormChange('name', e.target.value)}
+                  required
+                  autoFocus
+                />
+              </Form.Group>
+
+              <Form.Group className="mb-3">
+                <Form.Label>Description</Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={3}
+                  placeholder="Enter task description (optional)"
+                  value={formData.description}
+                  onChange={(e) => handleFormChange('description', e.target.value)}
+                />
+              </Form.Group>
+
+              <Form.Group className="mb-3">
+                <Form.Label>Priority</Form.Label>
+                <Form.Select
+                  value={formData.priority}
+                  onChange={(e) => handleFormChange('priority', e.target.value)}
+                >
+                  <option value={TaskPriority.LOW}>Low</option>
+                  <option value={TaskPriority.MEDIUM}>Medium</option>
+                  <option value={TaskPriority.HIGH}>High</option>
+                </Form.Select>
+              </Form.Group>
+
+              <Form.Group className="mb-3">
+                <Form.Label>Status</Form.Label>
+                <Form.Select
+                  value={formData.status}
+                  onChange={(e) => handleFormChange('status', e.target.value)}
+                >
+                  <option value={TaskStatus.UPCOMING}>Upcoming</option>
+                  <option value={TaskStatus.IN_PROGRESS}>In Progress</option>
+                  <option value={TaskStatus.COMPLETED}>Completed</option>
+                </Form.Select>
+              </Form.Group>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="secondary" onClick={handleCloseModal} disabled={isSubmitting}>
+                Cancel
+              </Button>
+              <Button variant="primary" type="submit" disabled={isSubmitting || !formData.name.trim()}>
+                {isSubmitting ? 'Creating...' : 'Create Task'}
+              </Button>
+            </Modal.Footer>
+          </Form>
+        </Modal>
       </Container>
     </React.Fragment>
   );
