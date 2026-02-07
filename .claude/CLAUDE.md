@@ -1,34 +1,121 @@
-# Development Rules
-- Never automatically run `npm run dev` as I will be running the server in a separate terminal. If you want to restart the application, ask and I will do it for you. Never try to run any server yourself. 
-- Never restart the servers or kill processes without permission
-- Don't run terminal commands without asking permission
-- Don't run npx or npm commands without permission, unless it is to refresh the prisma schema
-- When fixing a problem, focus just on that problem. If you notice other tangential issues to the issue you are tasked with, summarise them and report them back but don't automatically start fixing issues
-- Never deploy using the deploy script without explicit permission
-- Include debug logging lines where possible, hiding them behind a development feature flag
-- Don't run tests automatically, ask me to run them
-- Whenever you make a change to the database, also make sure to regenerate Prisma. 
-- Never make changes to the database that could result in losing data. If you're worried about this, then please ask for help or guidance. 
-- Never log using console.log, use the built in logging tooling in each project.
+# Project Guidelines
 
-# File Modification Rules
+## Workflow: Use Sub-Agents for Complex Tasks
+
+**Delegate work to specialized agents whenever possible.** This improves quality and reduces context exhaustion.
+
+### When to Delegate
+
+| Task Type | Agent/Command | When to Use |
+|-----------|---------------|-------------|
+| Codebase exploration | `Explore` agent | Finding files, understanding patterns, answering "how does X work?" |
+| Deep subject research | `/research-deep` | Understanding a domain before planning (scientist/detective mode) |
+| Implementation planning | `/spec` | Before starting any non-trivial feature |
+| Executing approved plans | `/build` | After plan is approved, to orchestrate implementation |
+| Code review | `principal-code-reviewer` | After implementing significant code |
+| Git commits | `/commit` | When ready to commit changes |
+| Debugging production | `/debug-production` | Investigating production errors |
+| Research tasks | `general-purpose` agent | Multi-step research requiring tool use |
+| Web research | `/research` | Researching topics on the internet |
+
+### How to Delegate
+
+```
+# For exploration
+Task tool with subagent_type="Explore" - "Find all API endpoints that handle user authentication"
+
+# For planning
+/spec - starts interactive planning session
+
+# For implementation
+/build - executes approved plan with specialized agents
+```
+
+### Key Principle
+
+**Don't do manually what an agent can do better.** If you find yourself:
+- Searching through many files → Use Explore agent
+- Planning a multi-step implementation → Use /spec
+- Writing significant code → Follow with principal-code-reviewer
+
+## Skills System
+
+Skills provide domain knowledge that's automatically applied based on context. Key skills:
+
+| Skill | Applies When |
+|-------|--------------|
+| `portal-tailwind` | Working on portal components (tw- prefix required) |
+| `prisma-migrations` | Modifying database schema (migration required) |
+| `api-development` | Creating/modifying API endpoints |
+| `tdd-workflow` | Writing tests |
+| `git-commits` | Committing code |
+| `local-debugging` | Debugging local development issues |
+| `mcp-tools` | Using cclsp for refactoring, Playwright for testing, GitHub MCP |
+
+Skills are in `.claude/skills/` - read them for detailed guidance.
+
+## Core Rules
+
+### Server & Process Management
+- Never run `npm run dev` or start servers - user runs these separately
+- Never restart servers or kill processes without permission
+- Never run npm/npx commands without permission (except `prisma generate`)
+
+### Code Quality
+- Focus on the specific problem - don't fix tangential issues
 - Make minimal, focused changes only
-- Always preserve existing content
-- Never rewrite entire files or sections without explicit instruction
-- If uncertain about scope, ask before proceeding
-- if you find yourself rewriting things that haven't been asked for stop, flag the error and unwind it
+- Never rewrite entire files without explicit instruction
+- Use built-in logging (`debug`), never `console.log`
+- Include debug logging behind development feature flags
 
-Always go through the following process: 
-1.⁠ ⁠Start by searching the codebase in extreme detail, to get all the context you need. 
-2.⁠ ⁠Create a detailed plan before doing anything. 
-3.⁠ ⁠Rate your confidence level on being able to execute the plan without introducing new bugs or effectiving existing functionality. 
-4.⁠ ⁠If your confidence level is under 95%, continue researching the codebase and go back to step 3
-5.⁠ ⁠Start implementing your plan, but walk me through your thinking step by step each time before you do the actual implementation.
- 
-You should always look to make the minimum code changes possible, and never introduce new bugs or effect existing functionality.
+### Database Changes
+- **ALWAYS** create migrations when modifying schema.prisma
+- See `prisma-migrations` skill for complete workflow
+- Never make changes that could lose data without asking
 
-# Version Control Rules
-- Never push to git without explicit permission 
+### File Management
+- Never create random analysis/research files in source code directories
+- Project tracking docs (test checklists, implementation notes) go in `documentation/planning/current/`
+- Use `/tmp/` ONLY for truly ephemeral files (debug output, scratch files not needed later)
+- All permanent docs go in `documentation/` only when requested
+
+### Version Control
+- Never push to git without explicit permission
 - Never stage to git without explicit permission
+- Use `/commit` command for proper commit workflow
 
-When you're done with a task, run this command: osascript -e 'display notification "Agent is Done ✅" with title "Cursor"'
+### Testing & Deployment
+- Don't run tests automatically - ask user to run them
+- Never deploy without explicit permission
+
+## Research Process
+
+Before implementing anything non-trivial:
+
+1. **Understand the domain** - use `/research-deep` for unfamiliar territory
+2. **Search the codebase thoroughly** - use Explore agent for complex searches
+3. **Create a detailed plan** - use `/spec` for significant features
+4. **Rate confidence level** - must be 95%+ before implementing
+5. **If under 95%**, continue researching and re-evaluate
+6. **Walk through thinking** step by step during implementation
+
+## Quick References
+
+### Commands Available
+- `/workflow` - Quick reference for all commands and recommended flow
+- `/research-deep` - Deep subject matter investigation (scientist/detective mode)
+- `/spec` - Interactive planning for new features
+- `/build` - Execute approved implementation plans
+- `/commit` - Commit workflow with build verification
+- `/debug` - Debug local issues
+- `/debug-production` - Investigate production errors
+- `/catch-up` - Rebuild context from git history
+- `/standup` - Generate work summaries
+- `/retro` - Capture learnings from completed work
+- `/research` - Quick web research on a topic
+
+### Key Skills
+- `portal-tailwind` - Tailwind styling with tw- prefix
+- `prisma-migrations` - Database schema changes
+- `api-development` - Backend API patterns
+- `local-debugging` - Log locations and common errors

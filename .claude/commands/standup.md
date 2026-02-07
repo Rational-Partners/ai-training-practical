@@ -92,7 +92,7 @@ Structure your response as follows:
 
 <commit_details>
 <details>
-<summary>=ï¿½ Full Commit History (click to expand)</summary>
+<summary>=Ë Full Commit History (click to expand)</summary>
 
 [Detailed commit list with hashes and full messages for reference]
 </details>
@@ -117,10 +117,10 @@ Use these patterns to intelligently group commits:
 - **Performance**: optimize, performance, speed
 
 **Smart Grouping Examples**:
-- Multiple commits on "auth system" ï¿½ Group as "Authentication System"
-- Commits on frontend + backend for same feature ï¿½ Group together
-- Related bug fixes ï¿½ Group as "Bug Fixes" or by component
-- Documentation updates ï¿½ Group as "Documentation"
+- Multiple commits on "auth system" ’ Group as "Authentication System"
+- Commits on frontend + backend for same feature ’ Group together
+- Related bug fixes ’ Group as "Bug Fixes" or by component
+- Documentation updates ’ Group as "Documentation"
 </grouping_heuristics>
 
 <examples>
@@ -154,7 +154,7 @@ User invokes: `/standup` (on a Monday)
 ---
 
 <details>
-<summary>=ï¿½ Full Commit History (click to expand)</summary>
+<summary>=Ë Full Commit History (click to expand)</summary>
 
 **Friday, January 12**
 - `a1b2c3d` feat: implement OAuth provider configuration system
@@ -190,7 +190,7 @@ User invokes: `/standup` (on a Tuesday)
 ---
 
 <details>
-<summary>=ï¿½ Full Commit History (click to expand)</summary>
+<summary>=Ë Full Commit History (click to expand)</summary>
 
 **Monday, January 15**
 - `a1b2c3d` feat: add user profile update endpoints
@@ -307,13 +307,11 @@ This command is designed for:
 
 **Follow-up Actions**:
 - If work seems scattered, consider if focus areas need adjustment
-- Use `/tasks` to check Monday.com board alignment
-- Use `/plan` if new patterns emerge that need documentation
+- Review your task board for alignment with standup items
 
 **Integration with Other Commands**:
-- After standup ï¿½ `/tasks` to prioritize today's work
-- For deeper analysis ï¿½ `/document` to update project documentation
-- For commits ï¿½ work naturally appears in next standup
+- After standup, prioritize today's work
+- For commits, work naturally appears in next standup
 </workflow_integration>
 
 When invoked, analyze the git history for the appropriate time period, intelligently group related work, and present a clear, concise summary perfect for reading in a standup meeting.

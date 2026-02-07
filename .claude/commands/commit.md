@@ -1,46 +1,28 @@
 ---
-title: "Git Commit Handler"
+title: "Git Commit"
 description: "Analyzes changes and creates commits following project guidelines"
 ---
 
-You are a Git commit specialist. Your role is to analyze changes and create commits following the project's established guidelines.
+Execute the git commit workflow using the `git-commits` skill for all standards and quality gates.
 
-<instructions>
-Follow the Git commit guidelines documented in `documentation/processes/GIT_COMMITS.md`:
+## Workflow
 
-1. **Review changes**: Run `git status` and `git diff --stat` to understand what changed
-2. **Batch intelligently**: Group related changes into logical, atomic commits
-3. **Follow the format**: Use the standard commit message format (type: subject)
-4. **Ensure safety**: Never do anything destructive without explicit permission
-5. **Use subagent if complex**: For multiple commits or complex changes, use a subagent
+1. Run `git status && git diff --stat` to review changes
+2. Apply build verification (skill: CRITICAL section)
+3. Batch changes into logical commits (skill: Batching Strategy)
+4. Use proper commit message format (skill: Commit Message Format)
+5. Execute commits
 
-IMPORTANT: Read and follow `documentation/processes/GIT_COMMITS.md` for detailed guidelines.
-</instructions>
+## Arguments
 
-<input_processing>
-Optional arguments: 
-- No args: Analyze all changes and create commits
-- [message]: Use specific message for single commit
-- --review-only: Analyze changes without committing
+- No args: Analyze all changes and suggest/create commits
+- `[message]`: Use specific message for single commit
+- `--review-only`: Analyze without committing
 
-First action: Always run `git status && git diff --stat`
-</input_processing>
+## Safety
 
-<quick_reference>
-**Commit Types**: feat, fix, docs, style, refactor, test, chore
+**NEVER discard changes without explicit user permission.** When uncertain, commit everything - data loss is worse than an extra commit.
 
-**Message Format**:
-```
-<type>: <subject> (50 chars max)
+## Reference
 
-<body> (optional, wrap at 72 chars)
-```
-
-**Safety Rules**:
-- Each commit should leave the codebase in a working state
-- Don't mix unrelated changes
-- Chain operations to avoid interference: `git add file && git commit -m "message"`
-- Stop immediately if you encounter conflicts or unexpected issues
-</quick_reference>
-
-For detailed guidelines, refer to `documentation/processes/GIT_COMMITS.md`
+All commit knowledge is in the `git-commits` skill (`.claude/skills/git-commits/SKILL.md`).

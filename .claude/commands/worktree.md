@@ -62,7 +62,9 @@ ls -la backend/prisma/migrations/ | tail -10
 ### 1.3 Analyze Target Worktree
 Navigate to target worktree and gather intelligence:
 ```bash
-cd /Users/robelkin/conductor/repo/continuous-insight-v2/[worktree_name]
+# First, find the repository root and worktree location
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "${REPO_ROOT}/../[worktree_name]"
 
 # Get branch information
 git branch --show-current
@@ -77,11 +79,20 @@ ls -la backend/prisma/migrations/ | tail -10
 # Check for schema changes
 git diff main -- backend/prisma/schema.prisma
 
-# Identify modified files
-git diff main --name-status
+# IMPORTANT: Identify files that will be ACTUALLY DELETED by the merge
+# Only show files explicitly deleted in commits on target branch
+# Files that exist in main but not in target will be PRESERVED (not deleted)
+echo "=== Files explicitly deleted in target branch commits ==="
+git log main..HEAD --diff-filter=D --name-status --pretty=format:"%h %s"
+echo ""
+echo ""
+
+# Show other modified/added files
+echo "=== Files modified or added in target branch ==="
+git diff main --name-status | grep -v "^D"
 
 # Return to original worktree
-cd /Users/robelkin/conductor/repo/continuous-insight-v2/.main
+cd "${REPO_ROOT}"
 ```
 
 ### 1.4 Conflict Analysis
@@ -106,6 +117,12 @@ git diff HEAD...[target_branch]
 **Target Worktree Features**: Document all features present in target branch
 **Shared Dependencies**: Identify shared files and potential conflict zones
 
+**IMPORTANT - File Deletion Logic**:
+- Files that exist in main but NOT in target = **PRESERVED** (added after branching)
+- Files explicitly deleted in target branch commits = **WILL BE DELETED** (intentional removal)
+- Only flag deletions if `git log main..target --diff-filter=D` shows deleted files
+- Example: If main has fileA.ts but target branch never had it, fileA.ts is preserved
+
 Key areas to check:
 - Database schema changes (backend/prisma/schema.prisma)
 - Migration files (backend/prisma/migrations/)
@@ -113,24 +130,47 @@ Key areas to check:
 - Frontend components (frontend/src/)
 - Environment variables (.env files)
 - Package dependencies (package.json files)
+- **Explicit deletions** (from git log, not from diff)
 
 ### 2.2 Database Migration Safety
 ```bash
 # Compare migration histories
-diff <(ls backend/prisma/migrations/) <(ls /Users/robelkin/conductor/repo/continuous-insight-v2/[worktree_name]/backend/prisma/migrations/)
+REPO_ROOT=$(git rev-parse --show-toplevel)
+diff <(ls backend/prisma/migrations/) <(ls "${REPO_ROOT}/../[worktree_name]/backend/prisma/migrations/")
 
 # Check for migration timestamp conflicts
 # Migrations from parallel branches may have interleaved timestamps
 ```
 
-### 2.3 Backup Current State
+### 2.3 Determine Merge Complexity
+Classify the merge as **simple** or **complex** based on these criteria:
+
+**Simple Merge** (skip backup branch):
+- ≤3 commits to merge
+- No conflicts detected in preview merge
+- No database schema changes (schema.prisma unchanged)
+- No new migrations
+- Changes are isolated to a small number of files (≤10)
+
+**Complex Merge** (create backup branch):
+- >3 commits to merge
+- Any conflicts detected
+- Database schema changes present
+- New migrations to apply
+- Changes span many files or critical areas (routes, services, etc.)
+
+### 2.4 Backup Current State (Complex Merges Only)
+**Only create a backup branch if the merge is classified as complex.**
+
 ```bash
-# Create a backup branch before merge
+# For COMPLEX merges only:
 git branch backup-before-merge-$(date +%Y%m%d-%H%M%S)
 
-# Note current commit for rollback
+# Note current commit for rollback (always useful to have)
 git rev-parse HEAD
 ```
+
+For simple merges, skip the backup branch creation - rollback can be done with `git reset --hard HEAD~1` or `git revert HEAD` if needed.
 
 ## Phase 3: Execute Merge
 
@@ -148,6 +188,8 @@ Changes include:
 - [List key features/changes from analysis]
 - Database migrations: [List new migrations]
 - Schema changes: [Describe schema changes]
+- Files explicitly deleted: [List only if git log shows deletions, otherwise state 'none']
+- Files preserved from main: [List significant files added to main after branching, if any]
 
 > Generated with [Claude Code](https://claude.com/claude-code)
 
@@ -273,16 +315,35 @@ Create a summary of:
 - Any breaking changes or required updates
 - Post-merge validation results
 
-### 6.2 Notify User
-Report:
--  Merge completed successfully
-- =� Statistics: commits merged, files changed, conflicts resolved
-- =� Database: migrations applied, schema updated
-- =� Documentation: regeneration status
-- � Action items: any manual steps needed (env vars, etc.)
-- = Rollback command: if something goes wrong
+### 6.2 Release Notification (Main Branch Only)
+If the current branch is **main**, trigger the release-summary-notifier agent to analyze the merge and potentially post to Slack:
 
-### 6.3 Rollback Procedure (if needed)
+```bash
+# Check if we're on main branch
+CURRENT_BRANCH=$(git branch --show-current)
+if [ "$CURRENT_BRANCH" = "main" ]; then
+  echo "On main branch - will trigger release notification"
+fi
+```
+
+**When on main branch:**
+1. Launch the `release-summary-notifier` agent using the Task tool
+2. The agent will analyze the merge commits and determine if features are noteworthy
+3. If noteworthy, it will craft a Slack message and ask for approval before posting
+4. The notification goes to the #dev-releases channel
+
+This ensures the team is informed about significant features being deployed to production.
+
+### 6.3 Notify User
+Report:
+- Merge completed successfully
+- Statistics: commits merged, files changed, conflicts resolved
+- Database: migrations applied, schema updated
+- Documentation: regeneration status
+- Action items: any manual steps needed (env vars, etc.)
+- Rollback command: if something goes wrong
+
+### 6.4 Rollback Procedure (if needed)
 If merge causes issues:
 ```bash
 # Reset to pre-merge state
@@ -307,7 +368,7 @@ git revert -m 1 HEAD
 - Skip migration or schema regeneration steps
 
 **ALWAYS**:
-- Create backup branch before merge
+- Create backup branch before **complex** merges (skip for simple merges)
 - Analyze both worktrees thoroughly before merging
 - Preserve all features from both branches
 - Run database migrations after merge
@@ -323,7 +384,8 @@ git revert -m 1 HEAD
 - [ ] Target worktree exists and is accessible
 - [ ] Analyzed both worktrees' history and changes
 - [ ] Identified potential conflicts
-- [ ] Created backup branch
+- [ ] Determined merge complexity (simple vs complex)
+- [ ] Created backup branch (complex merges only)
 - [ ] Have rollback plan ready
 
 **Post-Merge Checklist**:
