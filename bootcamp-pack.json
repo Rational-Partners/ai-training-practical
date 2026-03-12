@@ -25,7 +25,7 @@
         },
         {
           "name": "shell",
-          "command": "bash -ic 'npm run dev; exec bash'",
+          "command": "npm run dev",
           "size": 30
         }
       ]
