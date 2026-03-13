@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors'; // Import cors
+import os from 'os';
 
 // Import routes
 import exerciseTaskRoutes from './routes/exerciseTask.routes'; // Updated import path and variable name
@@ -48,5 +49,9 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 });
 
 app.listen(port, '0.0.0.0', () => {
-  console.log(`Backend server running at http://0.0.0.0:${port}`);
+  const networkIP = Object.values(os.networkInterfaces())
+    .flat()
+    .find((i) => i && i.family === 'IPv4' && !i.internal)?.address;
+  console.log(`Backend server running at http://localhost:${port}`);
+  if (networkIP) console.log(`  ➜  Network: http://${networkIP}:${port}`);
 }); 
