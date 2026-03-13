@@ -10,7 +10,7 @@ import analyticsRoutes from './routes/analytics.routes'; // Import the new analy
 dotenv.config();
 
 const app = express();
-const port = process.env.BACKEND_PORT || 3001;
+const port = parseInt(process.env.BACKEND_PORT || '3001');
 
 // Middleware
 
