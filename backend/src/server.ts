@@ -7,8 +7,8 @@ import os from 'os';
 import exerciseTaskRoutes from './routes/exerciseTask.routes'; // Updated import path and variable name
 import analyticsRoutes from './routes/analytics.routes'; // Import the new analytics routes
 
-// Load environment variables from .env file
-dotenv.config();
+// Load environment variables — .env takes priority, .env.dist used as fallback
+dotenv.config({ path: ['.env', '.env.dist'] });
 
 const app = express();
 const port = parseInt(process.env.BACKEND_PORT || '3001');
