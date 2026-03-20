@@ -37,7 +37,7 @@ export const handleGetTaskById = async (
   next: NextFunction
 ) => {
   try {
-    const { id } = req.params; // Extract ID from URL parameters
+    const id = req.params.id as string; // Extract ID from URL parameters
     const task = await TaskService.getTaskById(id);
 
     if (!task) {
@@ -77,7 +77,7 @@ export const handleUpdateTask = async (
   next: NextFunction
 ) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const updateData = req.body;
 
     // Basic check if updateData is empty
@@ -109,7 +109,7 @@ export const handleDeleteTask = async (
   next: NextFunction
 ) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     await TaskService.deleteTask(id);
     // TaskService.deleteTask returns the deleted task or throws P2025 if not found
     res.status(204).send(); // Send No Content on successful deletion

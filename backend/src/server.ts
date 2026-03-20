@@ -7,8 +7,8 @@ import os from 'os';
 import exerciseTaskRoutes from './routes/exerciseTask.routes'; // Updated import path and variable name
 import analyticsRoutes from './routes/analytics.routes'; // Import the new analytics routes
 
-// Load environment variables from .env file
-dotenv.config();
+// Load environment variables — .env takes priority, .env.dist used as fallback
+dotenv.config({ path: ['.env', '.env.dist'] });
 
 const app = express();
 const port = parseInt(process.env.BACKEND_PORT || '3001');
@@ -17,7 +17,7 @@ const port = parseInt(process.env.BACKEND_PORT || '3001');
 
 // Enable CORS for requests from the frontend origin
 app.use(cors({ 
-  origin: process.env.FRONTEND_URL || 'http://localhost:5000', // Allow frontend origin
+  origin: process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : 'http://localhost:5000', // Allow frontend origin
   methods: ["GET", "POST", "PUT", "DELETE"], // Allowed methods
   // allowedHeaders: ["Content-Type", "Authorization"], // If you need specific headers
 }));

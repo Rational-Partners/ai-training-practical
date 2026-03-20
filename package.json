@@ -8,7 +8,7 @@
   ],
   "main": "index.js",
   "scripts": {
-    "dev": "mkdir -p logs && concurrently --hide 0,1 --names backend,frontend,banner \"npm:dev --workspace=backend > logs/backend.log 2>&1\" \"npm:dev --workspace=frontend > logs/frontend.log 2>&1\" \"node scripts/dev-banner.mjs\"",
+    "dev": "mkdir -p logs && node --env-file=.env node_modules/.bin/concurrently --hide 0,1 --names backend,frontend,banner \"npm:dev --workspace=backend > logs/backend.log 2>&1\" \"npm:dev --workspace=frontend > logs/frontend.log 2>&1\" \"node scripts/dev-banner.mjs\"",
     "dev:verbose": "concurrently --names backend,frontend \"npm:dev --workspace=backend\" \"npm:dev --workspace=frontend\"",
     "lint": "npm run lint --workspaces --if-present",
     "format": "prettier --write .",
